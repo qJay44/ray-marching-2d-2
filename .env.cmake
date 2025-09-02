@@ -1,0 +1,5 @@
+set(SFML_PATH "C:/Users/q44/Documents/Libs/SFML-3.0.0")
+set(OCL_PATH "C:/Users/q44/Documents/Libs/OCL-SDK-1.0")
+set(UTILS_PATH "C:/Users/q44/Documents/Projects/utils")
+set(IMGUI_PATH "C:/Users/q44/Documents/Libs/imgui-1.91.7")
+set(SFML_IMGUI_PATH "C:/Users/q44/Documents/Libs/imgui-sfml-3.0")

@@ -1,0 +1,104 @@
+#include <cstdlib>
+#include <format>
+#include <direct.h>
+
+#include "RenderConfig.hpp"
+#include "gui.hpp"
+#include "imgui-SFML.h"
+
+#include "utils/utils.hpp"
+
+int main() {
+  // Assuming the executable is launching from its own directory
+  _chdir("../../../src");
+
+  srand(static_cast<unsigned int>(time(nullptr)));
+  RenderConfig renderConfig;
+  renderConfig.init();
+
+  gui::renderConfig = &renderConfig;
+
+  sf::RenderWindow& window = renderConfig.window;
+  window.setFramerateLimit(144);
+
+  if (!ImGui::SFML::Init(renderConfig.window))
+    error("ImGui init error");
+
+  std::string fontPath = "res/fonts/monocraft/Monocraft.ttf";
+  sf::Font font;
+  if (!font.openFromFile(fontPath))
+    error("Can't open font [{}]", fontPath);
+
+  sf::Texture blueNoise("res/tex/LDR_LLL1_0.png");
+
+  // Loop related
+  sf::Clock clock;
+  sf::Vector2i mousePos;
+  float dt;
+
+  struct Avg {
+    float ms = 0.f;
+    size_t fps = 0;
+    size_t frameIdx = 0;
+  } avg;
+
+  while (window.isOpen()) {
+    // ----- Events ----------------------------------- //
+
+    while (const std::optional event = window.pollEvent()) {
+      ImGui::SFML::ProcessEvent(window, *event);
+
+      if (event->is<sf::Event::Closed>()) {
+        window.close();
+      } else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
+        switch (keyPressed->scancode) {
+          case sf::Keyboard::Scancode::Q:
+            window.close();
+            break;
+          default:
+            break;
+        };
+      }
+    }
+
+    // ----- Update meta ------------------------------ //
+
+    ImGui::SFML::Update(window, clock.getElapsedTime());
+
+    dt = clock.restart().asSeconds();
+    mousePos = sf::Mouse::getPosition(window);
+
+    size_t fps = static_cast<size_t>(1.f / dt);
+    float ms = dt * 1000.f;
+
+    if (avg.frameIdx++ < 90) {
+      avg.fps += fps;
+      avg.ms += ms;
+      window.setTitle(std::format("FPS: {}, {:.2f} ms", avg.fps / avg.frameIdx, avg.ms / avg.frameIdx));
+    } else {
+      avg.fps /= avg.frameIdx;
+      avg.ms /= avg.frameIdx;
+      avg.frameIdx = 1;
+      window.setTitle(std::format("FPS: {}, {:.2f} ms", avg.fps, avg.ms));
+    }
+
+    // ----- Update objects --------------------------- //
+
+    renderConfig.update();
+
+    // ----- Draw ------------------------------------- //
+
+    renderConfig.drawAtMouse();
+
+    window.clear({10, 10, 10, 255});
+
+    window.draw(sf::Sprite(renderConfig.sceneTexture.getTexture()));
+
+    gui::draw();
+
+    window.display();
+  }
+
+  ImGui::SFML::Shutdown();
+}
+
