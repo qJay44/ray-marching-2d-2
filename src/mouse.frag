@@ -1,4 +1,3 @@
-uniform vec2 u_resolution;
 uniform vec2 u_pos;
 uniform vec3 u_color;
 uniform float u_radius;

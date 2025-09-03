@@ -87,6 +87,8 @@ int main() {
       window.setTitle(std::format("FPS: {}, {:.2f} ms", avg.fps, avg.ms));
     }
 
+    // ----- Update objects --------------------------- //
+
     sf::Vector2f mousePos = sf::Vector2f(sf::Mouse::getPosition(window));
 
     if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !gui::isHovered()) {
@@ -95,13 +97,11 @@ int main() {
       renderConfig.onMouseReleased();
     }
 
-    // ----- Update objects --------------------------- //
-
     renderConfig.update();
 
     // ----- Draw ------------------------------------- //
 
-    window.clear({10, 10, 10, 255});
+    window.clear();
 
     window.draw(renderConfig.getSceneSprite());
 

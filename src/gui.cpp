@@ -5,9 +5,6 @@
 
 #include "imgui.h"
 #include "utils/utils.hpp"
-#include "GL/gl.h"
-
-#define GL_TEXTURE_SWIZZLE_RGBA 0x8E46 // glad.h
 
 static bool toggleWholeWindow = false;
 
@@ -19,6 +16,15 @@ bool gui::isHovered() {
 
 void gui::toggle() {
   toggleWholeWindow = true;
+}
+
+void setCursorUnderCurrentWidget() {
+  ImVec2 imagePos = ImGui::GetItemRectMin();
+  ImVec2 imageSize = ImGui::GetItemRectSize();
+
+  float widgetPosX = imagePos.x;
+  float widgetPosY = imagePos.y + imageSize.y + ImGui::GetStyle().ItemInnerSpacing.y;
+  ImGui::SetCursorPos(ImVec2(widgetPosX, widgetPosY));
 }
 
 void gui::draw() {
@@ -35,24 +41,7 @@ void gui::draw() {
     toggleWholeWindow = false;
   }
 
-  if (ImGui::CollapsingHeader("Draw")) {
-    RenderConfig::Mouse& mouse = renderConfig->mouse;
-
-    ImGui::SliderFloat("mouseDrawRadius", &mouse.drawRadius, 1.f, 100.f);
-
-    // Mouse draw color edit
-    {
-      static sf::Vector3f& cfgCol = mouse.drawColor;
-      static float col[3] = {cfgCol.x, cfgCol.y, cfgCol.z};
-      if (ImGui::ColorEdit3("Color", col))
-        cfgCol = {col[0], col[1], col[2]};
-    }
-
-    if (ImGui::Button("Clear"))
-      renderConfig->clearScene();
-  }
-
-  if (ImGui::CollapsingHeader("Config")) {
+  if (ImGui::CollapsingHeader("Ray march")) {
     ImGui::SliderInt("Rays per pixel", &renderConfig->raysPerPixel, 1, 128);
     ImGui::SliderInt("Steps per ray", &renderConfig->stepsPerRay, 1, 128);
 
@@ -62,20 +51,92 @@ void gui::draw() {
   }
 
   if (ImGui::CollapsingHeader("Textures")) {
-    static const GLint swizzle[4] = {GL_RED, GL_RED, GL_RED, GL_ONE};
-
     static float scale = 0.2f;
-    ImGui::SliderFloat("Scaling", &scale, 0.1f, 1.f);
+    ImGui::SliderFloat("Size", &scale, 0.1f, 1.f);
+
+    float maxWidth = renderConfig->winSize.x * 0.3f;
 
     ImGui::SeparatorText("Scene");
-    sf::Vector2f sceneSize = sf::Vector2f(renderConfig->sceneTexture.getSize());
-    ImGui::Image(renderConfig->sceneTexture.getTexture().getNativeHandle(), sceneSize * scale, {0.f, 1.f}, {1.f, 0.f});
+    static bool showScene = true;
+    ImGui::Checkbox("Show", &showScene);
+    if (showScene) {
+      // ----- The image ------------------------------------------- //
 
-    ImGui::SeparatorText("SDF");
-    sf::Vector2f sdfSize = sf::Vector2f(renderConfig->sdfTexture.getSize());
-    sf::Texture::bind(&renderConfig->sdfTexture.getTexture());
-    // glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
-    ImGui::Image(renderConfig->sdfTexture.getTexture().getNativeHandle(), sdfSize * scale, {0.f, 1.f}, {1.f, 0.f});
+      sf::Vector2f sceneSize = sf::Vector2f(renderConfig->sceneTexture.getSize());
+      ImGui::Image(renderConfig->sceneTexture.getTexture().getNativeHandle(), sceneSize * scale);
+
+      // ----- The config ------------------------------------------ //
+
+      ImGui::SameLine();
+      ImGui::BeginGroup();
+      ImGui::PushItemWidth(maxWidth);
+
+      RenderConfig::Mouse& mouse = renderConfig->mouse;
+      ImGui::SliderFloat("Radius", &mouse.drawRadius, 1.f, 100.f);
+
+      // Mouse draw color edit
+      {
+        static sf::Vector3f& cfgCol = mouse.drawColor;
+        static float col[3] = {cfgCol.x, cfgCol.y, cfgCol.z};
+        if (ImGui::ColorEdit3("Color", col))
+          cfgCol = {col[0], col[1], col[2]};
+      }
+
+      if (ImGui::Button("Clear"))
+        renderConfig->clearScene();
+
+      ImGui::PopItemWidth();
+      ImGui::EndGroup();
+
+      // ----------------------------------------------------------- //
+    }
+
+    ImGui::SeparatorText("Seed");
+    static bool showSeed = true;
+    ImGui::Checkbox("Show##2", &showSeed);
+    if (showSeed) {
+      // ----- The image ------------------------------------------- //
+
+      const sf::Texture& seedTex = renderConfig->seedTexture.getTexture();
+      sf::Vector2f seedSize = sf::Vector2f(seedTex.getSize());
+      sf::Texture::bind(&seedTex);
+      ImGui::Image(seedTex.getNativeHandle(), seedSize * scale);
+
+      // ----- The config ------------------------------------------ //
+
+
+      // ----------------------------------------------------------- //
+    }
+
+    ImGui::SeparatorText("JFA");
+    static bool showJfa = true;
+    ImGui::Checkbox("Show##3", &showJfa);
+    if (showJfa) {
+      // ----- The image ------------------------------------------- //
+
+      const sf::Texture& jfaTex = renderConfig->jfaSprite.getTexture();
+      sf::Vector2f jfaSize = sf::Vector2f(jfaTex.getSize());
+      sf::Texture::bind(&jfaTex);
+      ImGui::Image(jfaTex.getNativeHandle(), jfaSize * scale);
+
+      // ----- The config ------------------------------------------ //
+
+      ImGui::SameLine();
+      ImGui::BeginGroup();
+      ImGui::PushItemWidth(maxWidth);
+
+      if (ImGui::Checkbox("Auto calculate passes", &renderConfig->autoJfaPasses))
+        renderConfig->calcPassesJFA();
+
+      ImGui::BeginDisabled(renderConfig->autoJfaPasses);
+      ImGui::SliderInt("Passes", &renderConfig->jfaPasses, 1, 20);
+      ImGui::EndDisabled();
+
+      ImGui::PopItemWidth();
+      ImGui::EndGroup();
+
+      // ----------------------------------------------------------- //
+    }
   }
 
   ImGui::End();
