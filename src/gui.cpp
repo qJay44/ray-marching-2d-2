@@ -1,12 +1,11 @@
+#include "RenderConfig.hpp"
 #include "gui.hpp"
 
-#include "imconfig-SFML.h"
-#include "imgui-SFML.h"
-#include "imgui.h"
+#include <cassert>
 
+#include "imgui.h"
 #include "utils/utils.hpp"
 #include "GL/gl.h"
-#include <cassert>
 
 #define GL_TEXTURE_SWIZZLE_RGBA 0x8E46 // glad.h
 
@@ -15,6 +14,10 @@ namespace gui {
 static bool toggleWholeWindow = false;
 
 RenderConfig* renderConfig = nullptr;
+
+bool isHovered() {
+  return ImGui::GetIO().WantCaptureMouse;
+}
 
 void toggle() {
   toggleWholeWindow = true;
@@ -34,8 +37,19 @@ void draw() {
     toggleWholeWindow = false;
   }
 
-  if (ImGui::CollapsingHeader("Config")) {
+  if (ImGui::CollapsingHeader("Draw")) {
     ImGui::SliderFloat("mouseDrawRadius", &renderConfig->mouseDrawRadius, 1.f, 100.f);
+
+    // Mouse draw color edit
+    {
+      static sf::Vector3f& cfgCol = renderConfig->mouseDrawColor;
+      static float col[3] = {cfgCol.x, cfgCol.y, cfgCol.z};
+      if (ImGui::ColorEdit3("Color", col))
+        cfgCol = {col[0], col[1], col[2]};
+    }
+  }
+
+  if (ImGui::CollapsingHeader("Config")) {
     ImGui::SliderInt("Rays per pixel", &renderConfig->raysPerPixel, 1, 128);
     ImGui::SliderInt("Steps per ray", &renderConfig->stepsPerRay, 1, 128);
 

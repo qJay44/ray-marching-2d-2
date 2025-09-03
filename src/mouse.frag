@@ -16,7 +16,7 @@ float sdfLineSquared(vec2 p, vec2 from, vec2 to) {
 void main() {
   vec2 coord = gl_FragCoord.xy;
   vec2 from = u_pos;
-  vec2 to = u_pos * 2;
+  vec2 to = from;
 
   if (sdfLineSquared(coord, from, to) <= u_radius * u_radius)
     gl_FragColor = vec4(u_color, 1.f);

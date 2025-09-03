@@ -4,8 +4,6 @@
 
 #include "RenderConfig.hpp"
 #include "gui.hpp"
-#include "imgui-SFML.h"
-
 #include "utils/utils.hpp"
 
 int main() {
@@ -55,6 +53,9 @@ int main() {
           case sf::Keyboard::Scancode::Q:
             window.close();
             break;
+          case sf::Keyboard::Scancode::E:
+            gui::toggle();
+            break;
           default:
             break;
         };
@@ -92,7 +93,7 @@ int main() {
 
     window.clear({10, 10, 10, 255});
 
-    window.draw(sf::Sprite(renderConfig.sceneTexture.getTexture()));
+    window.draw(renderConfig.sceneSprite);
 
     gui::draw();
 
