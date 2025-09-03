@@ -21,6 +21,7 @@ private:
 
   sf::RenderTexture sceneTexture;
   sf::RenderTexture seedTexture;
+  sf::RenderTexture sdfTexture;
   sf::RenderTexture ping;
   sf::RenderTexture pong;
   sf::RectangleShape screenRect;
@@ -41,6 +42,7 @@ private:
 
   sf::Shader seedShader = sf::Shader(fspath("seed.frag"), sf::Shader::Type::Fragment);
   sf::Shader jfaShader = sf::Shader(fspath("jfa.frag"), sf::Shader::Type::Fragment);
+  sf::Shader sdfShader = sf::Shader(fspath("sdf.frag"), sf::Shader::Type::Fragment);
   int jfaPasses = 1;
 
   bool isDrawing = false;
@@ -51,5 +53,6 @@ private:
   void drawMouseAt(const sf::Vector2f& point);
   void drawSeed();
   void drawJFA();
+  void drawSDF();
 };
 

@@ -56,10 +56,7 @@ void gui::draw() {
 
     float maxWidth = renderConfig->winSize.x * 0.3f;
 
-    ImGui::SeparatorText("Scene");
-    static bool showScene = true;
-    ImGui::Checkbox("Show", &showScene);
-    if (showScene) {
+    if (ImGui::TreeNode("Scene")) {
       // ----- The image ------------------------------------------- //
 
       sf::Vector2f sceneSize = sf::Vector2f(renderConfig->sceneTexture.getSize());
@@ -89,29 +86,20 @@ void gui::draw() {
       ImGui::EndGroup();
 
       // ----------------------------------------------------------- //
+
+      ImGui::TreePop();
     }
 
-    ImGui::SeparatorText("Seed");
-    static bool showSeed = true;
-    ImGui::Checkbox("Show##2", &showSeed);
-    if (showSeed) {
-      // ----- The image ------------------------------------------- //
-
+    if (ImGui::TreeNode("Seed")) {
       const sf::Texture& seedTex = renderConfig->seedTexture.getTexture();
       sf::Vector2f seedSize = sf::Vector2f(seedTex.getSize());
       sf::Texture::bind(&seedTex);
       ImGui::Image(seedTex.getNativeHandle(), seedSize * scale);
 
-      // ----- The config ------------------------------------------ //
-
-
-      // ----------------------------------------------------------- //
+      ImGui::TreePop();
     }
 
-    ImGui::SeparatorText("JFA");
-    static bool showJfa = true;
-    ImGui::Checkbox("Show##3", &showJfa);
-    if (showJfa) {
+    if (ImGui::TreeNode("JFA")) {
       // ----- The image ------------------------------------------- //
 
       const sf::Texture& jfaTex = renderConfig->jfaSprite.getTexture();
@@ -136,6 +124,17 @@ void gui::draw() {
       ImGui::EndGroup();
 
       // ----------------------------------------------------------- //
+
+      ImGui::TreePop();
+    }
+
+    if (ImGui::TreeNode("SDF")) {
+      const sf::Texture& sdfTex = renderConfig->sdfTexture.getTexture();
+      sf::Vector2f sdfSize = sf::Vector2f(sdfTex.getSize());
+      sf::Texture::bind(&sdfTex);
+      ImGui::Image(sdfTex.getNativeHandle(), sdfSize * scale);
+
+      ImGui::TreePop();
     }
   }
 

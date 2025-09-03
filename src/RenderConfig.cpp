@@ -3,19 +3,17 @@
 #include <algorithm>
 #include <cmath>
 
+constexpr sf::Color clearCol{0, 0, 0, 0};
+
 void RenderConfig::init(sf::Vector2u winSize) {
   this->winSize = winSize;
 
   sceneTexture = sf::RenderTexture(winSize);
   seedTexture = sf::RenderTexture(winSize);
+  sdfTexture = sf::RenderTexture(winSize);
   ping = sf::RenderTexture(winSize);
   pong = sf::RenderTexture(winSize);
   screenRect = sf::RectangleShape(sf::Vector2f(winSize));
-
-  // sceneTexture.clear();
-  // seedTexture.clear();
-  // ping.clear();
-  // pong.clear();
 
   sceneSprite = sf::Sprite(sceneTexture.getTexture());
   sceneSprite.setScale({1.f, -1.f});
@@ -26,6 +24,9 @@ void RenderConfig::init(sf::Vector2u winSize) {
 
   jfaSprite = sf::Sprite(sceneSprite);
   jfaShader.setUniform("u_resolution", sf::Vector2f(winSize));
+
+  sdfShader.setUniform("u_jfaTex", jfaSprite.getTexture());
+  sdfShader.setUniform("u_resolution", sf::Vector2f(winSize));
 
   calcPassesJFA();
 }
@@ -66,10 +67,11 @@ const sf::Sprite& RenderConfig::getSceneSprite() const {
 void RenderConfig::update() {
   drawSeed();
   drawJFA();
+  drawSDF();
 }
 
 void RenderConfig::clearScene() {
-  sceneTexture.clear({0, 0, 0, 0});
+  sceneTexture.clear(clearCol);
 }
 
 void RenderConfig::calcPassesJFA() {
@@ -89,6 +91,7 @@ void RenderConfig::drawMouseAt(const sf::Vector2f& point) {
 }
 
 void RenderConfig::drawSeed() {
+  seedTexture.clear(clearCol);
   seedTexture.draw(screenRect, &seedShader);
   seedTexture.display();
 }
@@ -96,7 +99,9 @@ void RenderConfig::drawSeed() {
 void RenderConfig::drawJFA() {
   sf::RenderTexture* inputTex = &ping;
   sf::RenderTexture* outputTex = &pong;
+  sf::RenderTexture* lastTex = outputTex;
 
+  inputTex->clear(clearCol);
   inputTex->draw(sf::Sprite(seedTexture.getTexture()));
   inputTex->display();
 
@@ -104,19 +109,23 @@ void RenderConfig::drawJFA() {
     jfaShader.setUniform("u_inputTex", inputTex->getTexture());
     jfaShader.setUniform("u_offset", 1 << (jfaPasses - i - 1));
 
+    outputTex->clear(clearCol);
     outputTex->draw(screenRect, &jfaShader);
     outputTex->display();
 
-    // Odds (1, 3, 5, ...)
-    if (i & 1) {
-      inputTex = &ping;
-      outputTex = &pong;
-    } else {
-      inputTex = &pong;
-      outputTex = &ping;
-    }
+    sf::RenderTexture* temp = inputTex;
+    inputTex = outputTex;
+    outputTex = temp;
+    lastTex = temp;
   }
 
-  jfaSprite.setTexture(jfaPasses & 1 ? pong.getTexture() : ping.getTexture());
+  jfaSprite.setTexture(lastTex->getTexture());
+}
+
+void RenderConfig::drawSDF() {
+  sdfTexture.clear(clearCol);
+  sdfTexture.draw(screenRect, &sdfShader);
+  sdfTexture.display();
+  sdfShader.setUniform("u_jfaTex", jfaSprite.getTexture());
 }
 
