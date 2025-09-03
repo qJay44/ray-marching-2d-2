@@ -1,3 +1,4 @@
+#include <SFML/Window/Mouse.hpp>
 #include <cstdlib>
 #include <format>
 #include <direct.h>
@@ -11,15 +12,16 @@ int main() {
   _chdir("../../../src");
 
   srand(static_cast<unsigned int>(time(nullptr)));
+  sf::RenderWindow window = sf::RenderWindow(sf::VideoMode({1200, 900}), "CMake SFML Project");
+  window.setFramerateLimit(144);
+
   RenderConfig renderConfig;
-  renderConfig.init();
+  renderConfig.init(window.getSize());
 
   gui::renderConfig = &renderConfig;
 
-  sf::RenderWindow& window = renderConfig.window;
-  window.setFramerateLimit(144);
 
-  if (!ImGui::SFML::Init(renderConfig.window))
+  if (!ImGui::SFML::Init(window))
     error("ImGui init error");
 
   std::string fontPath = "res/fonts/monocraft/Monocraft.ttf";
@@ -59,6 +61,8 @@ int main() {
           default:
             break;
         };
+      } else if (const auto* mouseMoved = event->getIf<sf::Event::MouseMoved>()) {
+        renderConfig.onMouseMoved(sf::Vector2f(mouseMoved->position));
       }
     }
 
@@ -83,19 +87,26 @@ int main() {
       window.setTitle(std::format("FPS: {}, {:.2f} ms", avg.fps, avg.ms));
     }
 
+    sf::Vector2f mousePos = sf::Vector2f(sf::Mouse::getPosition(window));
+
+    if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !gui::isHovered()) {
+      renderConfig.onMousePressed(mousePos);
+    } else {
+      renderConfig.onMouseReleased();
+    }
+
     // ----- Update objects --------------------------- //
 
     renderConfig.update();
 
     // ----- Draw ------------------------------------- //
 
-    renderConfig.drawAtMouse();
-
     window.clear({10, 10, 10, 255});
 
-    window.draw(renderConfig.sceneSprite);
+    window.draw(renderConfig.getSceneSprite());
 
     gui::draw();
+    ImGui::SFML::Render(window);
 
     window.display();
   }

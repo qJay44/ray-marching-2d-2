@@ -4,14 +4,14 @@
 #include "imgui-SFML.h"
 #include "imgui.h"
 
-namespace gui {
+struct gui {
 
-extern struct RenderConfig* renderConfig;
+static struct RenderConfig* renderConfig;
 
-bool isHovered();
+static bool isHovered();
 
-void toggle();
-void draw();
+static void toggle();
+static void draw();
 
-} // namespace gui
+};
 

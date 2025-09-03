@@ -9,21 +9,19 @@
 
 #define GL_TEXTURE_SWIZZLE_RGBA 0x8E46 // glad.h
 
-namespace gui {
-
 static bool toggleWholeWindow = false;
 
-RenderConfig* renderConfig = nullptr;
+RenderConfig* gui::renderConfig = nullptr;
 
-bool isHovered() {
+bool gui::isHovered() {
   return ImGui::GetIO().WantCaptureMouse;
 }
 
-void toggle() {
+void gui::toggle() {
   toggleWholeWindow = true;
 }
 
-void draw() {
+void gui::draw() {
   static RunOnce a([]() {
     ImGui::SetNextWindowPos({0, 0});
   });
@@ -38,15 +36,20 @@ void draw() {
   }
 
   if (ImGui::CollapsingHeader("Draw")) {
-    ImGui::SliderFloat("mouseDrawRadius", &renderConfig->mouseDrawRadius, 1.f, 100.f);
+    RenderConfig::Mouse& mouse = renderConfig->mouse;
+
+    ImGui::SliderFloat("mouseDrawRadius", &mouse.drawRadius, 1.f, 100.f);
 
     // Mouse draw color edit
     {
-      static sf::Vector3f& cfgCol = renderConfig->mouseDrawColor;
+      static sf::Vector3f& cfgCol = mouse.drawColor;
       static float col[3] = {cfgCol.x, cfgCol.y, cfgCol.z};
       if (ImGui::ColorEdit3("Color", col))
         cfgCol = {col[0], col[1], col[2]};
     }
+
+    if (ImGui::Button("Clear"))
+      renderConfig->clearScene();
   }
 
   if (ImGui::CollapsingHeader("Config")) {
@@ -76,9 +79,5 @@ void draw() {
   }
 
   ImGui::End();
-
-  ImGui::SFML::Render(renderConfig->window);
 }
-
-} // namespace gui
 
