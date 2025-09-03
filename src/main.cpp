@@ -20,7 +20,6 @@ int main() {
 
   gui::renderConfig = &renderConfig;
 
-
   if (!ImGui::SFML::Init(window))
     error("ImGui init error");
 
@@ -28,8 +27,6 @@ int main() {
   sf::Font font;
   if (!font.openFromFile(fontPath))
     error("Can't open font [{}]", fontPath);
-
-  sf::Texture blueNoise("res/tex/LDR_LLL1_0.png");
 
   // Loop related
   sf::Clock clock;
@@ -103,7 +100,7 @@ int main() {
 
     window.clear();
 
-    window.draw(renderConfig.getSceneSprite());
+    renderConfig.draw(window);
 
     gui::draw();
     ImGui::SFML::Render(window);

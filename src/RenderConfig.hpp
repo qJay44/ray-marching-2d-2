@@ -7,6 +7,7 @@ public:
   void init(sf::Vector2u winSize);
   void update();
   void clearScene();
+  void draw(sf::RenderWindow& window);
 
   void onMousePressed(const sf::Vector2f& pos);
   void onMouseReleased();
@@ -26,8 +27,15 @@ private:
   sf::RenderTexture pong;
   sf::RectangleShape screenRect;
 
+  const sf::Texture blueNoiseTex = sf::Texture("res/tex/LDR_LLL1_0.png");
+
   sf::Sprite sceneSprite = sf::Sprite(sceneTexture.getTexture());
   sf::Sprite jfaSprite = sf::Sprite(sceneSprite);
+
+  sf::Shader seedShader = sf::Shader(fspath("seed.frag"), sf::Shader::Type::Fragment);
+  sf::Shader jfaShader = sf::Shader(fspath("jfa.frag"), sf::Shader::Type::Fragment);
+  sf::Shader sdfShader = sf::Shader(fspath("sdf.frag"), sf::Shader::Type::Fragment);
+  sf::Shader giShader = sf::Shader(fspath("gi.frag"), sf::Shader::Type::Fragment);
 
   struct Mouse {
     sf::Shader shader = sf::Shader(fspath("mouse.frag"), sf::Shader::Type::Fragment);
@@ -39,10 +47,6 @@ private:
   int raysPerPixel = 32;
   int stepsPerRay = 32;
   float epsilon = 0.001f;
-
-  sf::Shader seedShader = sf::Shader(fspath("seed.frag"), sf::Shader::Type::Fragment);
-  sf::Shader jfaShader = sf::Shader(fspath("jfa.frag"), sf::Shader::Type::Fragment);
-  sf::Shader sdfShader = sf::Shader(fspath("sdf.frag"), sf::Shader::Type::Fragment);
   int jfaPasses = 1;
 
   bool isDrawing = false;

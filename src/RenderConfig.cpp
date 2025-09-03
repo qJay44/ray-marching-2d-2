@@ -28,6 +28,11 @@ void RenderConfig::init(sf::Vector2u winSize) {
   sdfShader.setUniform("u_jfaTex", jfaSprite.getTexture());
   sdfShader.setUniform("u_resolution", sf::Vector2f(winSize));
 
+  giShader.setUniform("u_sceneTex", sceneTexture.getTexture());
+  giShader.setUniform("u_sdfTex", sdfTexture.getTexture());
+  giShader.setUniform("u_blueNoiseTex", blueNoiseTex);
+  giShader.setUniform("u_resolution", sf::Vector2f(winSize));
+
   calcPassesJFA();
 }
 
@@ -72,6 +77,13 @@ void RenderConfig::update() {
 
 void RenderConfig::clearScene() {
   sceneTexture.clear(clearCol);
+}
+
+void RenderConfig::draw(sf::RenderWindow& window) {
+  giShader.setUniform("u_stepsPerRay", stepsPerRay);
+  giShader.setUniform("u_raysPerPixel", raysPerPixel);
+  giShader.setUniform("u_epsilon", epsilon);
+  window.draw(screenRect, &giShader);
 }
 
 void RenderConfig::calcPassesJFA() {
