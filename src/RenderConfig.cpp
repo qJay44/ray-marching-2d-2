@@ -5,15 +5,27 @@
 
 constexpr sf::Color clearCol{0, 0, 0, 0};
 
+template<typename T>
+void checkPacking(size_t width) {
+  size_t rowSize = width * sizeof(T);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, (rowSize % 4 == 0) ? 4 : 1);
+}
+
 void RenderConfig::init(sf::Vector2u winSize) {
   this->winSize = winSize;
 
   sceneTexture = sf::RenderTexture(winSize);
   seedTexture = sf::RenderTexture(winSize);
   sdfTexture = sf::RenderTexture(winSize);
-  ping = sf::RenderTexture(winSize);
-  pong = sf::RenderTexture(winSize);
+  pingJFA = sf::RenderTexture(winSize);
+  pongJFA = sf::RenderTexture(winSize);
   screenRect = sf::RectangleShape(sf::Vector2f(winSize));
+
+  glGenTexture(&sceneTexture.getTexture(), GL_RGBA16F);
+  glGenTexture(&seedTexture.getTexture(), GL_RG16F);
+  glGenTexture(&pingJFA.getTexture(), GL_RG16F);
+  glGenTexture(&pongJFA.getTexture(), GL_RG16F);
+  glGenTexture(&sdfTexture.getTexture(), GL_R16F);
 
   sceneSprite = sf::Sprite(sceneTexture.getTexture());
   sceneSprite.setScale({1.f, -1.f});
@@ -86,6 +98,21 @@ void RenderConfig::draw(sf::RenderWindow& window) {
   window.draw(screenRect, &giShader);
 }
 
+void RenderConfig::glGenTexture(const sf::Texture* tex, GLenum internalFormat) {
+  GLuint id = tex->getNativeHandle();
+  sf::Vector2u size = tex->getSize();
+
+  glGenTextures(1, &id);
+  sf::Texture::bind(tex);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+  glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+  sf::Texture::bind(nullptr);
+}
+
 void RenderConfig::calcPassesJFA() {
   if (autoJfaPasses)
     jfaPasses = static_cast<int>(std::ceil(std::log2(std::max(winSize.x, winSize.y))));
@@ -109,8 +136,8 @@ void RenderConfig::drawSeed() {
 }
 
 void RenderConfig::drawJFA() {
-  sf::RenderTexture* inputTex = &ping;
-  sf::RenderTexture* outputTex = &pong;
+  sf::RenderTexture* inputTex = &pingJFA;
+  sf::RenderTexture* outputTex = &pongJFA;
   sf::RenderTexture* lastTex = outputTex;
 
   inputTex->clear(clearCol);

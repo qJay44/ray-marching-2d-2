@@ -29,8 +29,19 @@ add_custom_command(
   DEPENDS ${IMGUI_PATH}/Build/${CMAKE_BUILD_TYPE}/${SFML_IMGUI_LIB_FILE}
 )
 
+# Using mannually built GLAD (copying dll)
+set(GLAD_LIB_FILE libGLAD.dll)
+add_custom_command(
+  OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${GLAD_LIB_FILE}
+  COMMAND ${CMAKE_COMMAND} -E copy
+    ${GLAD_PATH}/Build/Release/${GLAD_LIB_FILE}
+    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${GLAD_LIB_FILE}
+  DEPENDS ${GLAD_PATH}/Build/Release/${GLAD_LIB_FILE}
+)
+
 add_executable(${PROJECT_NAME}
   ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${SFML_IMGUI_LIB_FILE}
+  ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${GLAD_LIB_FILE}
   ${SOURCES}
 )
 
@@ -41,6 +52,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   ${UTILS_PATH}/include
   ${IMGUI_PATH}/include
   ${SFML_IMGUI_PATH}/include
+  ${GLAD_PATH}/include
 )
 
 target_precompile_headers(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src/pch.hpp)
@@ -48,6 +60,7 @@ target_precompile_headers(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src/pch.h
 target_link_directories(${PROJECT_NAME} PUBLIC
   ${OCL_PATH}/lib/x86_64
   ${IMGUI_PATH}/Build/${CMAKE_BUILD_TYPE}
+  ${GLAD_PATH}/Build/Release
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -56,5 +69,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   SFML::Graphics
   OpenCL
   libSFML_IMGUI
+  libGLAD
 )
 

@@ -23,8 +23,8 @@ private:
   sf::RenderTexture sceneTexture;
   sf::RenderTexture seedTexture;
   sf::RenderTexture sdfTexture;
-  sf::RenderTexture ping;
-  sf::RenderTexture pong;
+  sf::RenderTexture pingJFA;
+  sf::RenderTexture pongJFA;
   sf::RectangleShape screenRect;
 
   const sf::Texture blueNoiseTex = sf::Texture("res/tex/LDR_LLL1_0.png");
@@ -33,9 +33,9 @@ private:
   sf::Sprite jfaSprite = sf::Sprite(sceneSprite);
 
   sf::Shader seedShader = sf::Shader(fspath("seed.frag"), sf::Shader::Type::Fragment);
-  sf::Shader jfaShader = sf::Shader(fspath("jfa.frag"), sf::Shader::Type::Fragment);
-  sf::Shader sdfShader = sf::Shader(fspath("sdf.frag"), sf::Shader::Type::Fragment);
-  sf::Shader giShader = sf::Shader(fspath("gi.frag"), sf::Shader::Type::Fragment);
+  sf::Shader jfaShader  = sf::Shader(fspath("jfa.frag") , sf::Shader::Type::Fragment);
+  sf::Shader sdfShader  = sf::Shader(fspath("sdf.frag") , sf::Shader::Type::Fragment);
+  sf::Shader giShader   = sf::Shader(fspath("gi.frag")  , sf::Shader::Type::Fragment);
 
   struct Mouse {
     sf::Shader shader = sf::Shader(fspath("mouse.frag"), sf::Shader::Type::Fragment);
@@ -53,6 +53,7 @@ private:
   bool autoJfaPasses = true;
 
 private:
+  void glGenTexture(const sf::Texture* tex, GLenum internalFormat);
   void calcPassesJFA();
   void drawMouseAt(const sf::Vector2f& point);
   void drawSeed();

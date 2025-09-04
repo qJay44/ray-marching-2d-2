@@ -1,4 +1,3 @@
-#include <SFML/Window/Mouse.hpp>
 #include <cstdlib>
 #include <format>
 #include <direct.h>
@@ -11,9 +10,20 @@ int main() {
   // Assuming the executable is launching from its own directory
   _chdir("../../../src");
 
+  sf::ContextSettings settings;
+  settings.majorVersion = 4;
+  settings.minorVersion = 6;
+  settings.attributeFlags = sf::ContextSettings::Core;
+
   srand(static_cast<unsigned int>(time(nullptr)));
-  sf::RenderWindow window = sf::RenderWindow(sf::VideoMode({1200, 900}), "CMake SFML Project");
+  sf::RenderWindow window(sf::VideoMode({1200, 900}), "", sf::Style::Default);
   window.setFramerateLimit(144);
+
+  // GLAD init
+  if (!gladLoadGL()) {
+    printf("Failed to initialize GLAD\n");
+    return EXIT_FAILURE;
+  }
 
   RenderConfig renderConfig;
   renderConfig.init(window.getSize());
@@ -58,6 +68,8 @@ int main() {
           default:
             break;
         };
+      } else if (const auto* winResized = event->getIf<sf::Event::Resized>()) {
+        renderConfig.init(winResized->size);
       } else if (const auto* mouseMoved = event->getIf<sf::Event::MouseMoved>()) {
         renderConfig.onMouseMoved(sf::Vector2f(mouseMoved->position));
       }
