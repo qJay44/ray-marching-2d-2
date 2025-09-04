@@ -129,13 +129,20 @@ void gui::draw() {
     }
 
     if (ImGui::TreeNode("SDF")) {
+      static const GLint swizzle[4] = {GL_RED, GL_RED, GL_RED, GL_ONE};
+
       const sf::Texture& sdfTex = renderConfig->sdfTexture.getTexture();
       sf::Vector2f sdfSize = sf::Vector2f(sdfTex.getSize());
       sf::Texture::bind(&sdfTex);
+      glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
       ImGui::Image(sdfTex.getNativeHandle(), sdfSize * scale);
 
       ImGui::TreePop();
     }
+  }
+
+  if (ImGui::CollapsingHeader("Profiler")) {
+    renderConfig->profilerManager->render(400, 100, 200);
   }
 
   ImGui::End();

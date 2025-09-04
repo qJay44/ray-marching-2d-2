@@ -47,15 +47,16 @@ add_executable(${PROJECT_NAME}
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 
+target_precompile_headers(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src/pch.hpp)
+
 target_include_directories(${PROJECT_NAME} PUBLIC
   ${OCL_PATH}/include
   ${UTILS_PATH}/include
   ${IMGUI_PATH}/include
   ${SFML_IMGUI_PATH}/include
   ${GLAD_PATH}/include
+  ${LEGIT_PROFILER_PATH}/include
 )
-
-target_precompile_headers(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src/pch.hpp)
 
 target_link_directories(${PROJECT_NAME} PUBLIC
   ${OCL_PATH}/lib/x86_64

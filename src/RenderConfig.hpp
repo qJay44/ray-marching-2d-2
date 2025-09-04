@@ -1,13 +1,15 @@
 #pragma once
 
+#include "ProfilerManager.hpp"
 #include "utils/types.hpp"
 
 class RenderConfig {
 public:
   void init(sf::Vector2u winSize);
+  void addProfilier(ProfilerManager* pm);
   void update();
   void clearScene();
-  void draw(sf::RenderWindow& window);
+  void drawGI(sf::RenderWindow& window);
 
   void onMousePressed(const sf::Vector2f& pos);
   void onMouseReleased();
@@ -51,6 +53,8 @@ private:
 
   bool isDrawing = false;
   bool autoJfaPasses = true;
+
+  ProfilerManager* profilerManager = nullptr;
 
 private:
   void glGenTexture(const sf::Texture* tex, GLenum internalFormat);

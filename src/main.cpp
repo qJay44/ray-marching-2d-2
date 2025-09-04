@@ -2,6 +2,7 @@
 #include <format>
 #include <direct.h>
 
+#include "ProfilerManager.hpp"
 #include "RenderConfig.hpp"
 #include "gui.hpp"
 #include "utils/utils.hpp"
@@ -9,11 +10,6 @@
 int main() {
   // Assuming the executable is launching from its own directory
   _chdir("../../../src");
-
-  sf::ContextSettings settings;
-  settings.majorVersion = 4;
-  settings.minorVersion = 6;
-  settings.attributeFlags = sf::ContextSettings::Core;
 
   srand(static_cast<unsigned int>(time(nullptr)));
   sf::RenderWindow window(sf::VideoMode({1200, 900}), "", sf::Style::Default);
@@ -25,18 +21,15 @@ int main() {
     return EXIT_FAILURE;
   }
 
-  RenderConfig renderConfig;
-  renderConfig.init(window.getSize());
-
-  gui::renderConfig = &renderConfig;
-
   if (!ImGui::SFML::Init(window))
     error("ImGui init error");
 
-  std::string fontPath = "res/fonts/monocraft/Monocraft.ttf";
-  sf::Font font;
-  if (!font.openFromFile(fontPath))
-    error("Can't open font [{}]", fontPath);
+  ProfilerManager profilerManager(5, 144);
+  RenderConfig renderConfig;
+  renderConfig.init(window.getSize());
+  renderConfig.addProfilier(&profilerManager);
+
+  gui::renderConfig = &renderConfig;
 
   // Loop related
   sf::Clock clock;
@@ -98,10 +91,8 @@ int main() {
 
     // ----- Update objects --------------------------- //
 
-    sf::Vector2f mousePos = sf::Vector2f(sf::Mouse::getPosition(window));
-
     if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !gui::isHovered()) {
-      renderConfig.onMousePressed(mousePos);
+      renderConfig.onMousePressed(sf::Vector2f(mousePos));
     } else {
       renderConfig.onMouseReleased();
     }
@@ -112,7 +103,7 @@ int main() {
 
     window.clear();
 
-    renderConfig.draw(window);
+    renderConfig.drawGI(window);
 
     gui::draw();
     ImGui::SFML::Render(window);

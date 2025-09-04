@@ -48,6 +48,10 @@ void RenderConfig::init(sf::Vector2u winSize) {
   calcPassesJFA();
 }
 
+void RenderConfig::addProfilier(ProfilerManager* pm) {
+  profilerManager = pm;
+}
+
 void RenderConfig::onMousePressed(const sf::Vector2f& pos) {
   isDrawing = true;
   mouse.prevPos = pos;
@@ -91,11 +95,13 @@ void RenderConfig::clearScene() {
   sceneTexture.clear(clearCol);
 }
 
-void RenderConfig::draw(sf::RenderWindow& window) {
-  giShader.setUniform("u_stepsPerRay", stepsPerRay);
-  giShader.setUniform("u_raysPerPixel", raysPerPixel);
-  giShader.setUniform("u_epsilon", epsilon);
-  window.draw(screenRect, &giShader);
+void RenderConfig::drawGI(sf::RenderWindow& window) {
+  profilerManager->updateTask(4, [&]() {
+    giShader.setUniform("u_stepsPerRay", stepsPerRay);
+    giShader.setUniform("u_raysPerPixel", raysPerPixel);
+    giShader.setUniform("u_epsilon", epsilon);
+    window.draw(screenRect, &giShader);
+  }, "drawGI");
 }
 
 void RenderConfig::glGenTexture(const sf::Texture* tex, GLenum internalFormat) {
@@ -119,52 +125,60 @@ void RenderConfig::calcPassesJFA() {
 }
 
 void RenderConfig::drawMouseAt(const sf::Vector2f& point) {
-  mouse.shader.setUniform("u_pos", point);
-  mouse.shader.setUniform("u_color", mouse.drawColor);
-  mouse.shader.setUniform("u_radius", mouse.drawRadius);
+  profilerManager->updateTask(0, [&]() {
+    mouse.shader.setUniform("u_pos", point);
+    mouse.shader.setUniform("u_color", mouse.drawColor);
+    mouse.shader.setUniform("u_radius", mouse.drawRadius);
 
-  sceneTexture.draw(screenRect, &mouse.shader);
-  sceneTexture.display();
+    sceneTexture.draw(screenRect, &mouse.shader);
+    sceneTexture.display();
 
-  sceneSprite.setTexture(sceneTexture.getTexture());
+    sceneSprite.setTexture(sceneTexture.getTexture());
+  }, "drawMouseAt");
 }
 
 void RenderConfig::drawSeed() {
-  seedTexture.clear(clearCol);
-  seedTexture.draw(screenRect, &seedShader);
-  seedTexture.display();
+  profilerManager->updateTask(1, [&]() {
+    seedTexture.clear(clearCol);
+    seedTexture.draw(screenRect, &seedShader);
+    seedTexture.display();
+  }, "drawSeed");
 }
 
 void RenderConfig::drawJFA() {
-  sf::RenderTexture* inputTex = &pingJFA;
-  sf::RenderTexture* outputTex = &pongJFA;
-  sf::RenderTexture* lastTex = outputTex;
+  profilerManager->updateTask(2, [&]() {
+    sf::RenderTexture* inputTex = &pingJFA;
+    sf::RenderTexture* outputTex = &pongJFA;
+    sf::RenderTexture* lastTex = outputTex;
 
-  inputTex->clear(clearCol);
-  inputTex->draw(sf::Sprite(seedTexture.getTexture()));
-  inputTex->display();
+    inputTex->clear(clearCol);
+    inputTex->draw(sf::Sprite(seedTexture.getTexture()));
+    inputTex->display();
 
-  for (int i = 0; i < jfaPasses; i++) {
-    jfaShader.setUniform("u_inputTex", inputTex->getTexture());
-    jfaShader.setUniform("u_offset", 1 << (jfaPasses - i - 1));
+    for (int i = 0; i < jfaPasses; i++) {
+      jfaShader.setUniform("u_inputTex", inputTex->getTexture());
+      jfaShader.setUniform("u_offset", 1 << (jfaPasses - i - 1));
 
-    outputTex->clear(clearCol);
-    outputTex->draw(screenRect, &jfaShader);
-    outputTex->display();
+      outputTex->clear(clearCol);
+      outputTex->draw(screenRect, &jfaShader);
+      outputTex->display();
 
-    sf::RenderTexture* temp = inputTex;
-    inputTex = outputTex;
-    outputTex = temp;
-    lastTex = temp;
-  }
+      sf::RenderTexture* temp = inputTex;
+      inputTex = outputTex;
+      outputTex = temp;
+      lastTex = temp;
+    }
 
-  jfaSprite.setTexture(lastTex->getTexture());
+    jfaSprite.setTexture(lastTex->getTexture());
+  }, "drawJFA");
 }
 
 void RenderConfig::drawSDF() {
-  sdfTexture.clear(clearCol);
-  sdfTexture.draw(screenRect, &sdfShader);
-  sdfTexture.display();
-  sdfShader.setUniform("u_jfaTex", jfaSprite.getTexture());
+  profilerManager->updateTask(3, [&]() {
+    sdfTexture.clear(clearCol);
+    sdfTexture.draw(screenRect, &sdfShader);
+    sdfTexture.display();
+    sdfShader.setUniform("u_jfaTex", jfaSprite.getTexture());
+  }, "drawSDF");
 }
 
