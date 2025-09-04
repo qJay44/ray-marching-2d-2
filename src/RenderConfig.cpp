@@ -5,45 +5,79 @@
 
 constexpr sf::Color clearCol{0, 0, 0, 0};
 
-template<typename T>
-void checkPacking(size_t width) {
-  size_t rowSize = width * sizeof(T);
-  glPixelStorei(GL_UNPACK_ALIGNMENT, (rowSize % 4 == 0) ? 4 : 1);
+template<typename T = u8>
+void createTextureGl(
+  const sf::Texture* tex,
+  GLenum internalFormat,
+  GLenum format = GL_RGBA,
+  GLenum type = GL_UNSIGNED_BYTE,
+  const T* pixels = nullptr
+) {
+  GLuint id = tex->getNativeHandle();
+  sf::Vector2u size = tex->getSize();
+
+  glGenTextures(1, &id);
+  sf::Texture::bind(tex);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+  glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, size.x, size.y, 0, format, type, pixels);
+  sf::Texture::bind(nullptr);
+}
+
+template<typename T = u8>
+void updateTextureGl(
+  const sf::Texture* tex,
+  GLenum format = GL_RGBA,
+  GLenum type = GL_UNSIGNED_BYTE,
+  const T* pixels = nullptr
+) {
+  sf::Vector2u size = tex->getSize();
+  sf::Texture::bind(tex);
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y, format, type, pixels);
+  sf::Texture::bind(nullptr);
 }
 
 void RenderConfig::init(sf::Vector2u winSize) {
   this->winSize = winSize;
+  sf::Vector2f winSizeF(winSize);
 
   sceneTexture = sf::RenderTexture(winSize);
   seedTexture = sf::RenderTexture(winSize);
   sdfTexture = sf::RenderTexture(winSize);
   pingJFA = sf::RenderTexture(winSize);
   pongJFA = sf::RenderTexture(winSize);
-  screenRect = sf::RectangleShape(sf::Vector2f(winSize));
+  screenRect = sf::RectangleShape(winSizeF);
+  sandTex = sf::Texture(winSize);
 
-  glGenTexture(&sceneTexture.getTexture(), GL_RGBA16F);
-  glGenTexture(&seedTexture.getTexture(), GL_RG16F);
-  glGenTexture(&pingJFA.getTexture(), GL_RG16F);
-  glGenTexture(&pongJFA.getTexture(), GL_RG16F);
-  glGenTexture(&sdfTexture.getTexture(), GL_R16F);
+  createTextureGl(&sandTex, GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT);
+  createTextureGl(&sceneTexture.getTexture(), GL_RGBA16F);
+  createTextureGl(&seedTexture.getTexture(), GL_RG16F);
+  createTextureGl(&pingJFA.getTexture(), GL_RG16F);
+  createTextureGl(&pongJFA.getTexture(), GL_RG16F);
+  createTextureGl(&sdfTexture.getTexture(), GL_R16F);
 
   sceneSprite = sf::Sprite(sceneTexture.getTexture());
   sceneSprite.setScale({1.f, -1.f});
   sceneSprite.setPosition({0.f, static_cast<float>(sceneTexture.getSize().y)});
 
   seedShader.setUniform("u_surfaceTex", sceneTexture.getTexture());
-  seedShader.setUniform("u_resolution", sf::Vector2f(winSize));
+  seedShader.setUniform("u_resolution", winSizeF);
 
   jfaSprite = sf::Sprite(sceneSprite);
-  jfaShader.setUniform("u_resolution", sf::Vector2f(winSize));
+  jfaShader.setUniform("u_resolution", winSizeF);
 
   sdfShader.setUniform("u_jfaTex", jfaSprite.getTexture());
-  sdfShader.setUniform("u_resolution", sf::Vector2f(winSize));
+  sdfShader.setUniform("u_resolution", winSizeF);
 
   giShader.setUniform("u_sceneTex", sceneTexture.getTexture());
   giShader.setUniform("u_sdfTex", sdfTexture.getTexture());
   giShader.setUniform("u_blueNoiseTex", blueNoiseTex);
-  giShader.setUniform("u_resolution", sf::Vector2f(winSize));
+  giShader.setUniform("u_resolution", winSizeF);
+
+  clSand.createGrid({{winSize.x, winSize.y}});
 
   calcPassesJFA();
 }
@@ -86,6 +120,16 @@ const sf::Sprite& RenderConfig::getSceneSprite() const {
 }
 
 void RenderConfig::update() {
+  profilerManager->updateTask(5, [&]() {
+    clSand.fall();
+  }, "Sand::fall");
+
+  updateTextureGl(&sandTex, GL_RGBA, GL_HALF_FLOAT, clSand.getPixels());
+
+  // temp
+  sceneTexture.draw(sf::Sprite(sandTex));
+  sceneTexture.display();
+
   drawSeed();
   drawJFA();
   drawSDF();
@@ -104,21 +148,6 @@ void RenderConfig::drawGI(sf::RenderWindow& window) {
   }, "drawGI");
 }
 
-void RenderConfig::glGenTexture(const sf::Texture* tex, GLenum internalFormat) {
-  GLuint id = tex->getNativeHandle();
-  sf::Vector2u size = tex->getSize();
-
-  glGenTextures(1, &id);
-  sf::Texture::bind(tex);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
-  glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-  sf::Texture::bind(nullptr);
-}
-
 void RenderConfig::calcPassesJFA() {
   if (autoJfaPasses)
     jfaPasses = static_cast<int>(std::ceil(std::log2(std::max(winSize.x, winSize.y))));
@@ -130,10 +159,15 @@ void RenderConfig::drawMouseAt(const sf::Vector2f& point) {
     mouse.shader.setUniform("u_color", mouse.drawColor);
     mouse.shader.setUniform("u_radius", mouse.drawRadius);
 
-    sceneTexture.draw(screenRect, &mouse.shader);
-    sceneTexture.display();
-
-    sceneSprite.setTexture(sceneTexture.getTexture());
+    if (isSand) {
+      cl_float2 clPoint{{point.x, point.y}};
+      cl_float3 clDrawColor{{mouse.drawColor.x, mouse.drawColor.y, mouse.drawColor.z}};
+      clSand.draw(clPoint, clDrawColor, mouse.drawRadius);
+    } else {
+      sceneTexture.draw(screenRect, &mouse.shader);
+      sceneTexture.display();
+      sceneSprite.setTexture(sceneTexture.getTexture());
+    }
   }, "drawMouseAt");
 }
 

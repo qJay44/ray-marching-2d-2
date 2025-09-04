@@ -41,6 +41,27 @@ void gui::draw() {
     toggleWholeWindow = false;
   }
 
+  if (ImGui::CollapsingHeader("Draw")) {
+    static int rb = renderConfig->isSand;
+    ImGui::RadioButton("Solid", &rb, 0);
+    ImGui::RadioButton("Sand", &rb, 1);
+    renderConfig->isSand = rb;
+
+    RenderConfig::Mouse& mouse = renderConfig->mouse;
+    ImGui::SliderFloat("Radius", &mouse.drawRadius, 1.f, 100.f);
+
+    // Mouse draw color edit
+    {
+      static sf::Vector3f& cfgCol = mouse.drawColor;
+      static float col[3] = {cfgCol.x, cfgCol.y, cfgCol.z};
+      if (ImGui::ColorEdit3("Color", col))
+        cfgCol = {col[0], col[1], col[2]};
+    }
+
+    if (ImGui::Button("Clear"))
+      renderConfig->clearScene();
+  }
+
   if (ImGui::CollapsingHeader("Ray march")) {
     ImGui::SliderInt("Rays per pixel", &renderConfig->raysPerPixel, 1, 128);
     ImGui::SliderInt("Steps per ray", &renderConfig->stepsPerRay, 1, 128);
@@ -61,31 +82,6 @@ void gui::draw() {
 
       sf::Vector2f sceneSize = sf::Vector2f(renderConfig->sceneTexture.getSize());
       ImGui::Image(renderConfig->sceneTexture.getTexture().getNativeHandle(), sceneSize * scale);
-
-      // ----- The config ------------------------------------------ //
-
-      ImGui::SameLine();
-      ImGui::BeginGroup();
-      ImGui::PushItemWidth(maxWidth);
-
-      RenderConfig::Mouse& mouse = renderConfig->mouse;
-      ImGui::SliderFloat("Radius", &mouse.drawRadius, 1.f, 100.f);
-
-      // Mouse draw color edit
-      {
-        static sf::Vector3f& cfgCol = mouse.drawColor;
-        static float col[3] = {cfgCol.x, cfgCol.y, cfgCol.z};
-        if (ImGui::ColorEdit3("Color", col))
-          cfgCol = {col[0], col[1], col[2]};
-      }
-
-      if (ImGui::Button("Clear"))
-        renderConfig->clearScene();
-
-      ImGui::PopItemWidth();
-      ImGui::EndGroup();
-
-      // ----------------------------------------------------------- //
 
       ImGui::TreePop();
     }

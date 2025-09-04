@@ -24,7 +24,7 @@ int main() {
   if (!ImGui::SFML::Init(window))
     error("ImGui init error");
 
-  ProfilerManager profilerManager(5, 144);
+  ProfilerManager profilerManager(6, 144);
   RenderConfig renderConfig;
   renderConfig.init(window.getSize());
   renderConfig.addProfilier(&profilerManager);
