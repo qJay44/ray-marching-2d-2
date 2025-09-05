@@ -50,9 +50,7 @@ void RenderConfig::init(sf::Vector2u winSize) {
   pingJFA = sf::RenderTexture(winSize);
   pongJFA = sf::RenderTexture(winSize);
   screenRect = sf::RectangleShape(winSizeF);
-  sandTex = sf::Texture(winSize);
 
-  createTextureGl(&sandTex, GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT);
   createTextureGl(&sceneTexture.getTexture(), GL_RGBA16F);
   createTextureGl(&seedTexture.getTexture(), GL_RG16F);
   createTextureGl(&pingJFA.getTexture(), GL_RG16F);
@@ -76,8 +74,6 @@ void RenderConfig::init(sf::Vector2u winSize) {
   giShader.setUniform("u_sdfTex", sdfTexture.getTexture());
   giShader.setUniform("u_blueNoiseTex", blueNoiseTex);
   giShader.setUniform("u_resolution", winSizeF);
-
-  clSand.createGrid({{winSize.x, winSize.y}});
 
   calcPassesJFA();
 }
@@ -120,16 +116,6 @@ const sf::Sprite& RenderConfig::getSceneSprite() const {
 }
 
 void RenderConfig::update() {
-  profilerManager->updateTask(5, [&]() {
-    clSand.fall();
-  }, "Sand::fall");
-
-  updateTextureGl(&sandTex, GL_RGBA, GL_HALF_FLOAT, clSand.getPixels());
-
-  // temp
-  sceneTexture.draw(sf::Sprite(sandTex));
-  sceneTexture.display();
-
   drawSeed();
   drawJFA();
   drawSDF();
@@ -157,15 +143,9 @@ void RenderConfig::drawMouseAt(const sf::Vector2f& point) {
     mouse.shader.setUniform("u_color", mouse.drawColor);
     mouse.shader.setUniform("u_radius", mouse.drawRadius);
 
-    if (isSand) {
-      cl_float2 clPoint{{point.x, point.y}};
-      cl_float3 clDrawColor{{mouse.drawColor.x, mouse.drawColor.y, mouse.drawColor.z}};
-      clSand.draw(clPoint, clDrawColor, mouse.drawRadius);
-    } else {
-      sceneTexture.draw(screenRect, &mouse.shader);
-      sceneTexture.display();
-      sceneSprite.setTexture(sceneTexture.getTexture());
-    }
+    sceneTexture.draw(screenRect, &mouse.shader);
+    sceneTexture.display();
+    sceneSprite.setTexture(sceneTexture.getTexture());
   }, "drawMouseAt");
 }
 

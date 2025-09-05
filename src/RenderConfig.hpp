@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ProfilerManager.hpp"
-#include "cl/Sand.hpp"
 #include "utils/types.hpp"
 
 class RenderConfig {
@@ -31,7 +30,6 @@ private:
   sf::RectangleShape screenRect;
 
   const sf::Texture blueNoiseTex = sf::Texture("res/tex/LDR_LLL1_0.png");
-  sf::Texture sandTex;
 
   sf::Sprite sceneSprite = sf::Sprite(sceneTexture.getTexture());
   sf::Sprite jfaSprite = sf::Sprite(sceneSprite);
@@ -48,8 +46,6 @@ private:
     sf::Vector2f prevPos;
   } mouse;
 
-  cl::Sand clSand;
-
   int raysPerPixel = 32;
   int stepsPerRay = 32;
   float epsilon = 0.001f;
@@ -57,7 +53,6 @@ private:
 
   bool isDrawing = false;
   bool autoJfaPasses = true;
-  bool isSand = true;
 
   ProfilerManager* profilerManager = nullptr;
 

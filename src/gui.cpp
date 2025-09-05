@@ -42,11 +42,6 @@ void gui::draw() {
   }
 
   if (ImGui::CollapsingHeader("Draw")) {
-    static int rb = renderConfig->isSand;
-    ImGui::RadioButton("Solid", &rb, 0);
-    ImGui::RadioButton("Sand", &rb, 1);
-    renderConfig->isSand = rb;
-
     RenderConfig::Mouse& mouse = renderConfig->mouse;
     ImGui::SliderFloat("Radius", &mouse.drawRadius, 1.f, 100.f);
 
