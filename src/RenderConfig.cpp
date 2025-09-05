@@ -140,12 +140,10 @@ void RenderConfig::clearScene() {
 }
 
 void RenderConfig::drawGI(sf::RenderWindow& window) {
-  profilerManager->updateTask(4, [&]() {
-    giShader.setUniform("u_stepsPerRay", stepsPerRay);
-    giShader.setUniform("u_raysPerPixel", raysPerPixel);
-    giShader.setUniform("u_epsilon", epsilon);
-    window.draw(screenRect, &giShader);
-  }, "drawGI");
+  giShader.setUniform("u_stepsPerRay", stepsPerRay);
+  giShader.setUniform("u_raysPerPixel", raysPerPixel);
+  giShader.setUniform("u_epsilon", epsilon);
+  window.draw(screenRect, &giShader);
 }
 
 void RenderConfig::calcPassesJFA() {
@@ -154,7 +152,7 @@ void RenderConfig::calcPassesJFA() {
 }
 
 void RenderConfig::drawMouseAt(const sf::Vector2f& point) {
-  profilerManager->updateTask(0, [&]() {
+  profilerManager->startTask([&] {
     mouse.shader.setUniform("u_pos", point);
     mouse.shader.setUniform("u_color", mouse.drawColor);
     mouse.shader.setUniform("u_radius", mouse.drawRadius);
@@ -172,7 +170,7 @@ void RenderConfig::drawMouseAt(const sf::Vector2f& point) {
 }
 
 void RenderConfig::drawSeed() {
-  profilerManager->updateTask(1, [&]() {
+  profilerManager->startTask([&] {
     seedTexture.clear(clearCol);
     seedTexture.draw(screenRect, &seedShader);
     seedTexture.display();
@@ -180,7 +178,7 @@ void RenderConfig::drawSeed() {
 }
 
 void RenderConfig::drawJFA() {
-  profilerManager->updateTask(2, [&]() {
+  profilerManager->startTask([&] {
     sf::RenderTexture* inputTex = &pingJFA;
     sf::RenderTexture* outputTex = &pongJFA;
     sf::RenderTexture* lastTex = outputTex;
@@ -208,7 +206,7 @@ void RenderConfig::drawJFA() {
 }
 
 void RenderConfig::drawSDF() {
-  profilerManager->updateTask(3, [&]() {
+  profilerManager->startTask([&] {
     sdfTexture.clear(clearCol);
     sdfTexture.draw(screenRect, &sdfShader);
     sdfTexture.display();

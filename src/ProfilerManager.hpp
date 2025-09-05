@@ -3,6 +3,7 @@
 #include <cassert>
 #include <chrono>
 #include <functional>
+#include <vector>
 
 #include "ImGuiProfilerRenderer.h"
 #include "ProfilerTask.h"
@@ -10,25 +11,22 @@
 
 class ProfilerManager {
 public:
-  ProfilerManager(u8 tasksCount, size_t framesCount)
-    : tasksCount(tasksCount),
-      maxFrameTime(1.f / framesCount),
-      graph(framesCount) {
+  ProfilerManager(size_t framesCount) : graph(framesCount) {}
 
-    tasks = new legit::ProfilerTask[tasksCount];
+  void clearTasks() {
+    tasks.clear();
   }
 
-  ~ProfilerManager() {
-    delete[] tasks;
-  }
-
-  void updateTask(size_t i, const std::function<void()>& func, const std::string& name) {
+  const legit::ProfilerTask& startTask(
+    const std::function<void()>& func,
+    const std::string& name,
+    const u32* color = nullptr
+  ) {
     using namespace std::chrono;
-    assert(i < tasksCount);
 
-    legit::ProfilerTask& task = tasks[i];
+    legit::ProfilerTask task;
     task.name = name;
-    task.color = getColorBright(i);
+    task.color = color ? *color : getColorBright(tasks.size());
     task.startTime = 0.f;
 
     auto start = steady_clock::now();
@@ -36,22 +34,28 @@ public:
     auto end = steady_clock::now();
 
     duration<float> time = end - start;
-    task.endTime = time.count() * 1000.f;
+    task.endTime = time.count();
+
+    tasks.push_back(task);
+
+    return tasks.back();
   }
 
-  void render(int graphWidth, int legendWidth, int height, int frameIndexOffset = 1)  {
-    graph.LoadFrameData(tasks, tasksCount);
-    graph.RenderTimings(graphWidth, legendWidth, height, frameIndexOffset, maxFrameTime * 1000.f);
+  void addTask(const legit::ProfilerTask& task) {
+    tasks.push_back(task);
+  }
+
+  void render(int graphWidth, int legendWidth, int height, int frameIndexOffset = 1) {
+    graph.LoadFrameData(tasks.data(), tasks.size());
+    graph.RenderTimings(graphWidth, legendWidth, height, frameIndexOffset, 1.f);
   }
 
 private:
-  u8 tasksCount = 0;
-  float maxFrameTime;
-  legit::ProfilerTask* tasks = nullptr;
+  std::vector<legit::ProfilerTask> tasks;
   ImGuiUtils::ProfilerGraph graph;
 
 private:
-  const u32& getColorBright(size_t i) const {
+  static const u32& getColorBright(size_t i) {
     using namespace legit::Colors;
 
     static constexpr u32 colors[8] = {
@@ -61,7 +65,7 @@ private:
     return colors[i % 8];
   }
 
-  const u32& getColorDim(size_t i) const {
+  static const u32& getColorDim(size_t i) {
     using namespace legit::Colors;
 
     static constexpr u32 colors[8] = {

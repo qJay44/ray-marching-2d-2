@@ -13,7 +13,7 @@ int main() {
 
   srand(static_cast<unsigned int>(time(nullptr)));
   sf::RenderWindow window(sf::VideoMode({1200, 900}), "", sf::Style::Default);
-  window.setFramerateLimit(144);
+  // window.setFramerateLimit(144);
 
   // GLAD init
   if (!gladLoadGL()) {
@@ -24,7 +24,7 @@ int main() {
   if (!ImGui::SFML::Init(window))
     error("ImGui init error");
 
-  ProfilerManager profilerManager(6, 144);
+  ProfilerManager profilerManager(144);
   RenderConfig renderConfig;
   renderConfig.init(window.getSize());
   renderConfig.addProfilier(&profilerManager);
@@ -35,6 +35,7 @@ int main() {
   sf::Clock clock;
   sf::Vector2i mousePos;
   float dt;
+  legit::ProfilerTask displayTask;
 
   struct Avg {
     float ms = 0.f;
@@ -89,6 +90,9 @@ int main() {
       window.setTitle(std::format("FPS: {}, {:.2f} ms", avg.fps, avg.ms));
     }
 
+    profilerManager.clearTasks();
+    profilerManager.addTask(displayTask);
+
     // ----- Update objects --------------------------- //
 
     if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left) && !gui::isHovered()) {
@@ -108,7 +112,11 @@ int main() {
     gui::draw();
     ImGui::SFML::Render(window);
 
-    window.display();
+    // Happens after gui draw so add it manually after clearing tasks at the next frame
+    displayTask = profilerManager.startTask([&] {
+        window.display();
+    }, "window.display()");
+
   }
 
   ImGui::SFML::Shutdown();
