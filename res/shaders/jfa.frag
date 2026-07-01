@@ -1,3 +1,5 @@
+#version 330
+
 uniform sampler2D u_inputTex;
 uniform vec2 u_resolution;
 uniform int u_offset;

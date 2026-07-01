@@ -1,9 +1,11 @@
-#include "RenderConfig.hpp"
 #include "gui.hpp"
 
 #include <cassert>
 
+#include "imconfig-SFML.h"
 #include "imgui.h"
+
+#include "RenderConfig.hpp"
 #include "utils/utils.hpp"
 
 static bool toggleWholeWindow = false;
@@ -130,10 +132,6 @@ void gui::draw() {
 
       ImGui::TreePop();
     }
-  }
-
-  if (ImGui::CollapsingHeader("Profiler")) {
-    renderConfig->profilerManager->render(400, 100, 200, 10);
   }
 
   ImGui::End();

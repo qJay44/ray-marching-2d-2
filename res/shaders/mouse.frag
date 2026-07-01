@@ -1,3 +1,5 @@
+#version 330
+
 uniform vec2 u_pos;
 uniform vec3 u_color;
 uniform float u_radius;

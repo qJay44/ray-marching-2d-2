@@ -1,12 +1,10 @@
 #pragma once
 
-#include "ProfilerManager.hpp"
 #include "utils/types.hpp"
 
 class RenderConfig {
 public:
-  void init(sf::Vector2u winSize);
-  void addProfilier(ProfilerManager* pm);
+  void init(sf::RenderWindow& window);
   void update();
   void clearScene();
   void drawGI(sf::RenderWindow& window);
@@ -29,18 +27,18 @@ private:
   sf::RenderTexture pongJFA;
   sf::RectangleShape screenRect;
 
-  const sf::Texture blueNoiseTex = sf::Texture("res/tex/LDR_LLL1_0.png");
+  const sf::Texture blueNoiseTex = sf::Texture("res/tex/noise/LDR_LLL1_0.png");
 
   sf::Sprite sceneSprite = sf::Sprite(sceneTexture.getTexture());
   sf::Sprite jfaSprite = sf::Sprite(sceneSprite);
 
-  sf::Shader seedShader = sf::Shader(fspath("shaders/seed.frag"), sf::Shader::Type::Fragment);
-  sf::Shader jfaShader  = sf::Shader(fspath("shaders/jfa.frag") , sf::Shader::Type::Fragment);
-  sf::Shader sdfShader  = sf::Shader(fspath("shaders/sdf.frag") , sf::Shader::Type::Fragment);
-  sf::Shader giShader   = sf::Shader(fspath("shaders/gi.frag")  , sf::Shader::Type::Fragment);
+  sf::Shader seedShader = sf::Shader(fspath("res/shaders/seed.frag"), sf::Shader::Type::Fragment);
+  sf::Shader jfaShader  = sf::Shader(fspath("res/shaders/jfa.frag") , sf::Shader::Type::Fragment);
+  sf::Shader sdfShader  = sf::Shader(fspath("res/shaders/sdf.frag") , sf::Shader::Type::Fragment);
+  sf::Shader giShader   = sf::Shader(fspath("res/shaders/gi.frag")  , sf::Shader::Type::Fragment);
 
   struct Mouse {
-    sf::Shader shader = sf::Shader(fspath("shaders/mouse.frag"), sf::Shader::Type::Fragment);
+    sf::Shader shader = sf::Shader(fspath("res/shaders/mouse.frag"), sf::Shader::Type::Fragment);
     float drawRadius = 5.f;
     sf::Vector3f drawColor{1.f, 0.f, 1.f};
     sf::Vector2f prevPos;
@@ -53,8 +51,6 @@ private:
 
   bool isDrawing = false;
   bool autoJfaPasses = true;
-
-  ProfilerManager* profilerManager = nullptr;
 
 private:
   void calcPassesJFA();

@@ -7,69 +7,64 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Run)
 
-project(MyProject VERSION 1.0)
+project(MyProject VERSION 1.0 LANGUAGES C CXX)
 
-find_package(SFML 3 REQUIRED COMPONENTS System Window Graphics PATHS ${SFML_PATH})
+find_package(OpenGL REQUIRED)
+find_package(SFML 3 REQUIRED COMPONENTS System Window Graphics)
 
-file(GLOB_RECURSE SOURCES
-  ${PROJECT_SOURCE_DIR}/src/*.cpp
-  ${UTILS_PATH}/src/*.cpp
+# ===== GLAD ====================================================== #
+
+add_library(GLAD STATIC ${GLAD_PATH}/src/gl.c)
+target_include_directories(GLAD PUBLIC ${GLAD_PATH}/include)
+
+# ===== ImGui (SFML) ============================================== #
+
+add_library(ImGui_SFML STATIC
+  ${IMGUI_PATH}/imgui.cpp
+  ${IMGUI_PATH}/imgui_draw.cpp
+  ${IMGUI_PATH}/imgui_tables.cpp
+  ${IMGUI_PATH}/imgui_widgets.cpp
+  ${IMGUI_SFML_PATH}/imgui-SFML.cpp
 )
 
-list(REMOVE_ITEM SOURCES ${UTILS_PATH}/src/loadTif.cpp)
-list(REMOVE_ITEM SOURCES ${UTILS_PATH}/src/saveTif.cpp)
+target_include_directories(ImGui_SFML PUBLIC ${IMGUI_PATH} ${IMGUI_SFML_PATH})
+target_link_libraries(ImGui_SFML PRIVATE GLAD)
 
-# Using mannually built ImGui with SFML (copying dll)
-set(SFML_IMGUI_LIB_FILE libSFML_IMGUI.dll)
-add_custom_command(
-  OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${SFML_IMGUI_LIB_FILE}
-  COMMAND ${CMAKE_COMMAND} -E copy
-    ${IMGUI_PATH}/Build/${CMAKE_BUILD_TYPE}/${SFML_IMGUI_LIB_FILE}
-    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${SFML_IMGUI_LIB_FILE}
-  DEPENDS ${IMGUI_PATH}/Build/${CMAKE_BUILD_TYPE}/${SFML_IMGUI_LIB_FILE}
-)
+# ===== My utils ================================================== #
 
-# Using mannually built GLAD (copying dll)
-set(GLAD_LIB_FILE libGLAD.dll)
-add_custom_command(
-  OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${GLAD_LIB_FILE}
-  COMMAND ${CMAKE_COMMAND} -E copy
-    ${GLAD_PATH}/Build/Release/${GLAD_LIB_FILE}
-    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${GLAD_LIB_FILE}
-  DEPENDS ${GLAD_PATH}/Build/Release/${GLAD_LIB_FILE}
-)
+file(GLOB_RECURSE UTILS_SOURCES ${UTILS_PATH}/src/*.cpp)
 
-add_executable(${PROJECT_NAME}
-  ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${SFML_IMGUI_LIB_FILE}
-  ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${GLAD_LIB_FILE}
-  ${SOURCES}
-)
+# Remove TIFF from sources
+list(REMOVE_ITEM UTILS_SOURCES ${UTILS_PATH}/src/loadTif.cpp)
+list(REMOVE_ITEM UTILS_SOURCES ${UTILS_PATH}/src/saveTif.cpp)
+
+add_library(Utils STATIC ${UTILS_SOURCES})
+
+target_include_directories(Utils PUBLIC ${UTILS_PATH}/include)
+
+# ===== Main ====================================================== #
+
+file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 
-target_precompile_headers(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src/pch.hpp)
-
-target_include_directories(${PROJECT_NAME} PUBLIC
-  ${OCL_PATH}/include
-  ${UTILS_PATH}/include
-  ${IMGUI_PATH}/include
-  ${SFML_IMGUI_PATH}/include
+target_include_directories(${PROJECT_NAME} PRIVATE
   ${GLAD_PATH}/include
-  ${LEGIT_PROFILER_PATH}/include
-)
-
-target_link_directories(${PROJECT_NAME} PUBLIC
-  ${OCL_PATH}/lib/x86_64
-  ${IMGUI_PATH}/Build/${CMAKE_BUILD_TYPE}
-  ${GLAD_PATH}/Build/Release
+  ${UTILS_PATH}/include
+  ${PROFILER_PATH}/include
+  ${PROJECT_SOURCE_DIR}/include
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
   SFML::System
   SFML::Window
   SFML::Graphics
-  OpenCL
-  libSFML_IMGUI
-  libGLAD
+  GLAD
+  Utils
+  ImGui_SFML
+  OpenGL::GL
 )
+
+target_precompile_headers(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src/pch.hpp)
 

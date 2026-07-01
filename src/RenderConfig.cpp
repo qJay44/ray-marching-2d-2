@@ -11,12 +11,9 @@ void createTextureGl(
   GLenum internalFormat,
   GLenum format = GL_RGBA,
   GLenum type = GL_UNSIGNED_BYTE,
-  const T* pixels = nullptr
-) {
-  GLuint id = tex->getNativeHandle();
+  const T* pixels = nullptr) {
   sf::Vector2u size = tex->getSize();
 
-  glGenTextures(1, &id);
   sf::Texture::bind(tex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -27,21 +24,8 @@ void createTextureGl(
   sf::Texture::bind(nullptr);
 }
 
-template<typename T = u8>
-void updateTextureGl(
-  const sf::Texture* tex,
-  GLenum format = GL_RGBA,
-  GLenum type = GL_UNSIGNED_BYTE,
-  const T* pixels = nullptr
-) {
-  sf::Vector2u size = tex->getSize();
-  sf::Texture::bind(tex);
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, size.x, size.y, format, type, pixels);
-  sf::Texture::bind(nullptr);
-}
-
-void RenderConfig::init(sf::Vector2u winSize) {
-  this->winSize = winSize;
+void RenderConfig::init(sf::RenderWindow& window) {
+  this->winSize = window.getSize();
   sf::Vector2f winSizeF(winSize);
 
   sceneTexture = sf::RenderTexture(winSize);
@@ -51,11 +35,13 @@ void RenderConfig::init(sf::Vector2u winSize) {
   pongJFA = sf::RenderTexture(winSize);
   screenRect = sf::RectangleShape(winSizeF);
 
+  window.pushGLStates();
   createTextureGl(&sceneTexture.getTexture(), GL_RGBA16F);
   createTextureGl(&seedTexture.getTexture(), GL_RG16F);
   createTextureGl(&pingJFA.getTexture(), GL_RG16F);
   createTextureGl(&pongJFA.getTexture(), GL_RG16F);
   createTextureGl(&sdfTexture.getTexture(), GL_R16F);
+  window.popGLStates();
 
   sceneSprite = sf::Sprite(sceneTexture.getTexture());
   sceneSprite.setScale({1.f, -1.f});
@@ -76,10 +62,6 @@ void RenderConfig::init(sf::Vector2u winSize) {
   giShader.setUniform("u_resolution", winSizeF);
 
   calcPassesJFA();
-}
-
-void RenderConfig::addProfilier(ProfilerManager* pm) {
-  profilerManager = pm;
 }
 
 void RenderConfig::onMousePressed(const sf::Vector2f& pos) {
@@ -138,59 +120,51 @@ void RenderConfig::calcPassesJFA() {
 }
 
 void RenderConfig::drawMouseAt(const sf::Vector2f& point) {
-  profilerManager->startTask([&] {
-    mouse.shader.setUniform("u_pos", point);
-    mouse.shader.setUniform("u_color", mouse.drawColor);
-    mouse.shader.setUniform("u_radius", mouse.drawRadius);
+  mouse.shader.setUniform("u_pos", point);
+  mouse.shader.setUniform("u_color", mouse.drawColor);
+  mouse.shader.setUniform("u_radius", mouse.drawRadius);
 
-    sceneTexture.draw(screenRect, &mouse.shader);
-    sceneTexture.display();
-    sceneSprite.setTexture(sceneTexture.getTexture());
-  }, "drawMouseAt");
+  sceneTexture.draw(screenRect, &mouse.shader);
+  sceneTexture.display();
+  sceneSprite.setTexture(sceneTexture.getTexture());
 }
 
 void RenderConfig::drawSeed() {
-  profilerManager->startTask([&] {
-    seedTexture.clear(clearCol);
-    seedTexture.draw(screenRect, &seedShader);
-    seedTexture.display();
-  }, "drawSeed");
+  seedTexture.clear(clearCol);
+  seedTexture.draw(screenRect, &seedShader);
+  seedTexture.display();
 }
 
 void RenderConfig::drawJFA() {
-  profilerManager->startTask([&] {
-    sf::RenderTexture* inputTex = &pingJFA;
-    sf::RenderTexture* outputTex = &pongJFA;
-    sf::RenderTexture* lastTex = outputTex;
+  sf::RenderTexture* inputTex = &pingJFA;
+  sf::RenderTexture* outputTex = &pongJFA;
+  sf::RenderTexture* lastTex = outputTex;
 
-    inputTex->clear(clearCol);
-    inputTex->draw(sf::Sprite(seedTexture.getTexture()));
-    inputTex->display();
+  inputTex->clear(clearCol);
+  inputTex->draw(sf::Sprite(seedTexture.getTexture()));
+  inputTex->display();
 
-    for (int i = 0; i < jfaPasses; i++) {
-      jfaShader.setUniform("u_inputTex", inputTex->getTexture());
-      jfaShader.setUniform("u_offset", 1 << (jfaPasses - i - 1));
+  for (int i = 0; i < jfaPasses; i++) {
+    jfaShader.setUniform("u_inputTex", inputTex->getTexture());
+    jfaShader.setUniform("u_offset", 1 << (jfaPasses - i - 1));
 
-      outputTex->clear(clearCol);
-      outputTex->draw(screenRect, &jfaShader);
-      outputTex->display();
+    outputTex->clear(clearCol);
+    outputTex->draw(screenRect, &jfaShader);
+    outputTex->display();
 
-      sf::RenderTexture* temp = inputTex;
-      inputTex = outputTex;
-      outputTex = temp;
-      lastTex = temp;
-    }
+    sf::RenderTexture* temp = inputTex;
+    inputTex = outputTex;
+    outputTex = temp;
+    lastTex = temp;
+  }
 
-    jfaSprite.setTexture(lastTex->getTexture());
-  }, "drawJFA");
+  jfaSprite.setTexture(lastTex->getTexture());
 }
 
 void RenderConfig::drawSDF() {
-  profilerManager->startTask([&] {
-    sdfTexture.clear(clearCol);
-    sdfTexture.draw(screenRect, &sdfShader);
-    sdfTexture.display();
-    sdfShader.setUniform("u_jfaTex", jfaSprite.getTexture());
-  }, "drawSDF");
+  sdfTexture.clear(clearCol);
+  sdfTexture.draw(screenRect, &sdfShader);
+  sdfTexture.display();
+  sdfShader.setUniform("u_jfaTex", jfaSprite.getTexture());
 }
 

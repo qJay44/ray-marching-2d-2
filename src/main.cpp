@@ -1,33 +1,31 @@
 #include <cstdlib>
-#include <format>
-#include <direct.h>
 
-#include "ProfilerManager.hpp"
 #include "RenderConfig.hpp"
 #include "gui.hpp"
 #include "utils/utils.hpp"
 
+#include "imconfig-SFML.h"
+#include "imgui-SFML.h"
+
 int main() {
   // Assuming the executable is launching from its own directory
-  _chdir("../../../src");
+  CHDIR("../../..");
 
   srand(static_cast<unsigned int>(time(nullptr)));
-  sf::RenderWindow window(sf::VideoMode({1200, 900}), "", sf::Style::Default);
+  sf::RenderWindow window(sf::VideoMode({1200, 720}), "MyProgram");
   // window.setFramerateLimit(144);
 
-  // GLAD init
-  if (!gladLoadGL()) {
-    printf("Failed to initialize GLAD\n");
-    return EXIT_FAILURE;
+  if (!gladLoadGL([](const char* name) {
+    return reinterpret_cast<GLADapiproc>(sf::Context::getFunction(name));
+  })) {
+    error("GLAD load error");
   }
 
   if (!ImGui::SFML::Init(window))
     error("ImGui init error");
 
-  ProfilerManager profilerManager(144);
   RenderConfig renderConfig;
-  renderConfig.init(window.getSize());
-  renderConfig.addProfilier(&profilerManager);
+  renderConfig.init(window);
 
   gui::renderConfig = &renderConfig;
 
@@ -35,7 +33,6 @@ int main() {
   sf::Clock clock;
   sf::Vector2i mousePos;
   float dt;
-  legit::ProfilerTask displayTask;
 
   struct Avg {
     float ms = 0.f;
@@ -62,8 +59,8 @@ int main() {
           default:
             break;
         };
-      } else if (const auto* winResized = event->getIf<sf::Event::Resized>()) {
-        renderConfig.init(winResized->size);
+      } else if (const auto* _ = event->getIf<sf::Event::Resized>()) {
+        renderConfig.init(window);
       } else if (const auto* mouseMoved = event->getIf<sf::Event::MouseMoved>()) {
         renderConfig.onMouseMoved(sf::Vector2f(mouseMoved->position));
       }
@@ -82,16 +79,11 @@ int main() {
     if (avg.frameIdx++ < 90) {
       avg.fps += fps;
       avg.ms += ms;
-      window.setTitle(std::format("FPS: {}, {:.2f} ms", avg.fps / avg.frameIdx, avg.ms / avg.frameIdx));
     } else {
       avg.fps /= avg.frameIdx;
       avg.ms /= avg.frameIdx;
       avg.frameIdx = 1;
-      window.setTitle(std::format("FPS: {}, {:.2f} ms", avg.fps, avg.ms));
     }
-
-    profilerManager.clearTasks();
-    profilerManager.addTask(displayTask);
 
     // ----- Update objects --------------------------- //
 
@@ -111,14 +103,11 @@ int main() {
 
     gui::draw();
     ImGui::SFML::Render(window);
-
-    // Happens after gui draw so add it manually after clearing tasks at the next frame
-    displayTask = profilerManager.startTask([&] {
-        window.display();
-    }, "window.display()");
-
+    window.display();
   }
 
   ImGui::SFML::Shutdown();
+
+  return 0;
 }
 

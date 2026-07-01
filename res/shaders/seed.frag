@@ -1,3 +1,5 @@
+#version 330
+
 uniform sampler2D u_surfaceTex;
 uniform vec2 u_resolution;
 
